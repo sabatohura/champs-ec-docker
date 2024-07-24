@@ -1,0 +1,46 @@
+version: "3.7"
+services:
+  database:
+    container_name: database
+    image: postgres:latest
+    restart: always
+    volumes:
+      - db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=12345
+      - POSTGRES_DB=DEV
+      - POSTGRES_USER=postgres
+
+  back-end:
+    build:
+      context: ./champs-ec-be
+      dockerfile: Dockerfile
+    entrypoint: ["/bin/bash", "entrypoint.sh"]
+    ports:
+      - "5500:5500"
+    depends_on:
+      - database
+    container_name: champs-back-end
+    environment:
+      - PORT=5500
+      - DB_DEV=postgres://postgres:12345@database/DEV
+      - DB_TEST=postgres://postgres:12345@database/test
+      - DB_HOST=database
+    command: ["npm", "run", "dev"]
+
+  front-end:
+    build:
+      context: ./champs-ec-fe
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    container_name: champs-front-end
+    environment:
+      - URL=https://champs-ec-be.onrender.com/api
+    depends_on:
+      - back-end
+
+volumes:
+  db:
